@@ -37,7 +37,7 @@ export class ApiStack extends Stack {
 
     // Lambda function
     const apiFn = new MediaForgeFunction(this, 'ApiFunction', {
-      entry: '../packages/api/dist',
+      entry: '../packages/api/src/index.ts',
       memorySize: 512,
       environment: {
         S3_BUCKET_NAME: props.bucket.bucketName,

@@ -1,23 +1,11 @@
 import { Construct } from 'constructs';
+import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as path from 'path';
 import { Duration } from 'aws-cdk-lib';
 
-/**
- * Base Lambda construct with MediaForge defaults.
- *
- * TODO:
- * - ARM64 architecture (Graviton — cheaper + faster)
- * - Node.js 20 runtime
- * - 256MB memory default (override for Sharp functions → 1536MB)
- * - 30s timeout default
- * - Structured JSON logging (AWS_LAMBDA_LOG_FORMAT=JSON)
- * - X-Ray tracing enabled
- * - Environment variables from config
- */
 export interface MediaForgeFunctionProps {
-  entry: string;           // Path to the handler file
-  handler?: string;        // Handler export name (default: "handler")
+  entry: string;
+  handler?: string;
   memorySize?: number;
   timeout?: Duration;
   environment?: Record<string, string>;
@@ -30,11 +18,11 @@ export class MediaForgeFunction extends Construct {
   constructor(scope: Construct, id: string, props: MediaForgeFunctionProps) {
     super(scope, id);
 
-    this.fn = new lambda.Function(this, 'Function', {
+    this.fn = new lambdaNode.NodejsFunction(this, 'Function', {
+      entry: props.entry,
+      handler: props.handler || 'handler',
       runtime: lambda.Runtime.NODEJS_20_X,
       architecture: lambda.Architecture.ARM_64,
-      handler: props.handler || 'index.handler',
-      code: lambda.Code.fromAsset(props.entry),
       memorySize: props.memorySize || 256,
       timeout: props.timeout || Duration.seconds(30),
       environment: {
@@ -43,6 +31,12 @@ export class MediaForgeFunction extends Construct {
       },
       layers: props.layers,
       tracing: lambda.Tracing.ACTIVE,
+      bundling: {
+        minify: true,
+        sourceMap: true,
+        externalModules: [],
+        forceDockerBundling: false,  // Use local esbuild, not Docker
+      },
     });
   }
 }

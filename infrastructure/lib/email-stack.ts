@@ -46,7 +46,7 @@ export class EmailStack extends Stack {
 
     // Email Worker Lambda
     const emailWorker = new MediaForgeFunction(this, 'EmailWorker', {
-      entry: '../packages/email-worker/dist',
+      entry: '../packages/email-worker/src/handler.ts',
       environment: {
         SES_FROM_EMAIL: config.sesFromEmail,
         CDN_DOMAIN: config.cdnDomain,
