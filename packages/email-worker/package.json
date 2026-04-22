@@ -1,0 +1,24 @@
+{
+  "name": "@media-forge/email-worker",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/handler.js",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint src/",
+    "test": "jest",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ses": "^3.600.0",
+    "@media-forge/core": "file:../core",
+    "handlebars": "^4.7.8"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.161"
+  }
+}

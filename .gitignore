@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.next/
+.turbo/
+*.js.map
+*.d.ts
+!jest.config.ts
+!next.config.ts
+!tailwind.config.ts
+!postcss.config.js
+.env
+.env.local
+.env.*.local
+cdk.out/
+coverage/
+.DS_Store

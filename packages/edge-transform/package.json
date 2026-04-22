@@ -1,0 +1,24 @@
+{
+  "name": "@media-forge/edge-transform",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/handler.js",
+  "scripts": {
+    "build": "node esbuild.config.ts",
+    "dev": "tsc --watch",
+    "lint": "eslint src/",
+    "test": "jest",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@media-forge/core": "file:../core",
+    "sharp": "^0.33.0"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.161"
+  }
+}

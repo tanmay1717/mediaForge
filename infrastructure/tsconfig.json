@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "paths": {
+      "@media-forge/core": ["../packages/core/src"]
+    }
+  },
+  "include": ["bin/**/*", "lib/**/*"],
+  "references": [{ "path": "../packages/core" }]
+}

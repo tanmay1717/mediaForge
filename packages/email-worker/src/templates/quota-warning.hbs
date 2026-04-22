@@ -1,0 +1,7 @@
+<h1>Storage quota warning</h1>
+<p>Hi {{name}},</p>
+<p>You've used <strong>{{usagePercent}}%</strong> of your storage quota.</p>
+<p>Used: {{formatBytes usedBytes}} / {{formatBytes limitBytes}}</p>
+<!-- TODO: Add a visual progress bar using inline CSS (table-based for email compatibility) -->
+<p>Consider deleting unused assets or upgrading your plan.</p>
+<p><a href="{{dashboardUrl}}/settings/usage">View Usage</a></p>

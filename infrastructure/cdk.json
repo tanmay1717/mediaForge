@@ -1,0 +1,9 @@
+{
+  "app": "npx ts-node bin/app.ts",
+  "context": {
+    "stage": "dev",
+    "cdnDomain": "cdn.yourdomain.com",
+    "dashboardDomain": "app.yourdomain.com",
+    "sesFromEmail": "noreply@yourdomain.com"
+  }
+}
