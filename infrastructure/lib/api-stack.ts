@@ -7,18 +7,6 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import { MediaForgeConfig } from './config';
 import { MediaForgeFunction } from './constructs/lambda-function';
 
-/**
- * ApiStack — API Gateway + Backend Lambda.
- *
- * TODO:
- * - Create REST API with Cognito authorizer
- * - Create Lambda function with env vars pointing to S3/DynamoDB/Cognito/SNS
- * - Grant Lambda permissions: S3 read/write, DynamoDB CRUD, SNS publish, Cognito admin
- * - Add API Gateway proxy resource: ANY /{proxy+} → Lambda
- * - Add CORS configuration on the API
- * - Enable API Gateway stage logging + X-Ray
- * - Set throttling limits (default: 100 rps burst, 50 rps steady)
- */
 export interface ApiStackProps extends StackProps {
   userPool: cognito.UserPool;
   bucket: s3.Bucket;
@@ -27,6 +15,7 @@ export interface ApiStackProps extends StackProps {
   usersTable: dynamodb.Table;
   apiKeysTable: dynamodb.Table;
   snsTopicArn?: string;
+  cognitoClientId: string;
 }
 
 export class ApiStack extends Stack {
@@ -35,7 +24,6 @@ export class ApiStack extends Stack {
   constructor(scope: Construct, id: string, config: MediaForgeConfig, props: ApiStackProps) {
     super(scope, id, props);
 
-    // Lambda function
     const apiFn = new MediaForgeFunction(this, 'ApiFunction', {
       entry: '../packages/api/src/index.ts',
       memorySize: 512,
@@ -46,6 +34,7 @@ export class ApiStack extends Stack {
         USERS_TABLE: props.usersTable.tableName,
         API_KEYS_TABLE: props.apiKeysTable.tableName,
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
+        COGNITO_CLIENT_ID: props.cognitoClientId,
         CDN_DOMAIN: config.cdnDomain,
         DASHBOARD_DOMAIN: config.dashboardDomain,
         SNS_TOPIC_ARN: props.snsTopicArn ?? '',
@@ -53,22 +42,18 @@ export class ApiStack extends Stack {
       },
     });
 
-    // Grant permissions
     props.bucket.grantReadWrite(apiFn.fn);
     props.assetsTable.grantReadWriteData(apiFn.fn);
     props.foldersTable.grantReadWriteData(apiFn.fn);
     props.usersTable.grantReadWriteData(apiFn.fn);
     props.apiKeysTable.grantReadWriteData(apiFn.fn);
 
-    // TODO: Grant SNS publish permission
-    // TODO: Grant Cognito admin actions permission
-
-    // Cognito authorizer
     const authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'CognitoAuth', {
       cognitoUserPools: [props.userPool],
     });
 
-    // REST API
+    const lambdaIntegration = new apigateway.LambdaIntegration(apiFn.fn);
+
     this.api = new apigateway.RestApi(this, 'Api', {
       restApiName: `mediaforge-${config.stage}`,
       defaultCorsPreflightOptions: {
@@ -78,17 +63,30 @@ export class ApiStack extends Stack {
       },
     });
 
-    // Proxy integration: ANY /{proxy+} → Lambda
-    const proxy = this.api.root.addProxy({
-      defaultIntegration: new apigateway.LambdaIntegration(apiFn.fn),
-      anyMethod: true,
-      defaultMethodOptions: {
-        authorizer,
-        authorizationType: apigateway.AuthorizationType.COGNITO,
-      },
+    // Public routes: /v1/auth/* — NO Cognito authorizer
+    const v1 = this.api.root.addResource('v1');
+    const auth = v1.addResource('auth');
+    const authProxy = auth.addResource('{proxy+}');
+    authProxy.addMethod('ANY', lambdaIntegration, {
+      authorizationType: apigateway.AuthorizationType.NONE,
     });
 
-    // TODO: Override auth to NONE for /v1/auth/* routes (public endpoints)
+    // Protected routes: everything else — WITH Cognito authorizer
+    // /v1/upload, /v1/assets, /v1/folders, /v1/cache, /v1/api-keys, /v1/stats
+    const protectedResources = ['upload', 'assets', 'folders', 'cache', 'api-keys', 'stats'];
+    for (const resource of protectedResources) {
+      const res = v1.addResource(resource);
+      res.addMethod('ANY', lambdaIntegration, {
+        authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+      });
+      // Add {proxy+} for sub-paths like /v1/assets/{id}
+      const subProxy = res.addResource('{proxy+}');
+      subProxy.addMethod('ANY', lambdaIntegration, {
+        authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+      });
+    }
 
     new CfnOutput(this, 'ApiUrl', { value: this.api.url });
   }

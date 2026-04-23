@@ -2,7 +2,7 @@
 export interface Folder {
   folderId: string;
   userId: string;
-  parentFolderId: string | null;
+  parentFolderId: string;
   name: string;
   path: string; // materialized: "/products/electronics/phones"
   assetCount: number;

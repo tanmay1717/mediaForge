@@ -5,7 +5,7 @@
 
 /** Build a materialized path from parent path + folder name */
 export function buildPath(parentPath: string | null, folderName: string): string {
-  const parent = parentPath ?? '';
+  const parent = parentPath === null || parentPath === undefined ? '' : parentPath;
   return `${parent}/${folderName}`;
 }
 

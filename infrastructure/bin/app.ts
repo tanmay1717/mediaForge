@@ -43,6 +43,7 @@ const api = new ApiStack(app, `MediaForge-Api-${config.stage}`, config, {
   usersTable: storage.usersTable,
   apiKeysTable: storage.apiKeysTable,
   snsTopicArn: email.topic.topicArn,
+  cognitoClientId: auth.userPoolClient.userPoolClientId,
 });
 
 const cdn = new CdnStack(app, `MediaForge-Cdn-${config.stage}`, config, {

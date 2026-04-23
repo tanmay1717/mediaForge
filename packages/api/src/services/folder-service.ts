@@ -36,7 +36,7 @@ export class FolderService {
 
     const folder: Folder = {
       folderId, userId,
-      parentFolderId: parentFolderId ?? null,
+      parentFolderId: parentFolderId ?? "ROOT",
       name, path: buildPath(parentPath, name),
       assetCount: 0, totalSize: 0,
       createdAt: now, updatedAt: now,
