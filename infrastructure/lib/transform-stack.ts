@@ -5,6 +5,7 @@ import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as path from 'path';
 import { MediaForgeConfig } from './config';
 
@@ -49,10 +50,17 @@ export class TransformStack extends Stack {
       authType: lambda.FunctionUrlAuthType.NONE,
     });
 
+    // Import the wildcard certificate
+    const cert = acm.Certificate.fromCertificateArn(this, 'WildcardCert',
+      'arn:aws:acm:us-east-1:807737159780:certificate/b548d6a5-3c81-4404-bf90-9b17fa3e4be1',
+    );
+
     const fnOrigin = new origins.FunctionUrlOrigin(fnUrl);
     const s3Origin = new origins.S3Origin(props.bucket);
 
     this.distribution = new cloudfront.Distribution(this, 'MediaCdn', {
+      domainNames: ['cdn.tanmayshetty.com'],
+      certificate: cert,
       defaultBehavior: {
         origin: s3Origin,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -77,5 +85,6 @@ export class TransformStack extends Stack {
     new CfnOutput(this, 'CdnDomain', { value: this.distribution.distributionDomainName });
     new CfnOutput(this, 'CdnDistributionId', { value: this.distribution.distributionId });
     new CfnOutput(this, 'TransformFnUrl', { value: fnUrl.url });
+    new CfnOutput(this, 'CustomDomain', { value: 'cdn.tanmayshetty.com' });
   }
 }
