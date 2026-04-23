@@ -8,24 +8,22 @@ import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as path from 'path';
 import { MediaForgeConfig } from './config';
 
-export interface CdnStackProps extends StackProps {
+export interface TransformStackProps extends StackProps {
   bucket: s3.Bucket;
 }
 
-export class CdnStack extends Stack {
+export class TransformStack extends Stack {
   public readonly distribution: cloudfront.Distribution;
 
-  constructor(scope: Construct, id: string, config: MediaForgeConfig, props: CdnStackProps) {
+  constructor(scope: Construct, id: string, config: MediaForgeConfig, props: TransformStackProps) {
     super(scope, id, props);
 
-    // Sharp Lambda Layer
     const sharpLayer = lambda.LayerVersion.fromLayerVersionArn(
       this, 'SharpLayer',
       'arn:aws:lambda:us-east-1:807737159780:layer:sharp-linux-x64:1',
     );
 
-    // Regular Lambda (not @Edge) — supports layers, env vars, ARM64
-    const transformFn = new lambdaNode.NodejsFunction(this, 'TransformFunction', {
+    const transformFn = new lambdaNode.NodejsFunction(this, 'TransformFn', {
       entry: path.join(__dirname, '../../packages/edge-transform/src/lambda-handler.ts'),
       handler: 'handler',
       runtime: lambda.Runtime.NODEJS_20_X,
@@ -45,21 +43,16 @@ export class CdnStack extends Stack {
       },
     });
 
-    // Grant S3 access
     props.bucket.grantReadWrite(transformFn);
 
-    // Function URL — acts as the origin for CloudFront
     const fnUrl = transformFn.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
     });
 
-    // CloudFront with two origins:
-    // 1. Lambda Function URL — for /v1/* transform requests
-    // 2. S3 — for raw/passthrough requests
     const fnOrigin = new origins.FunctionUrlOrigin(fnUrl);
     const s3Origin = new origins.S3Origin(props.bucket);
 
-    this.distribution = new cloudfront.Distribution(this, 'CdnDistribution', {
+    this.distribution = new cloudfront.Distribution(this, 'MediaCdn', {
       defaultBehavior: {
         origin: s3Origin,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -68,8 +61,8 @@ export class CdnStack extends Stack {
         '/v1/*': {
           origin: fnOrigin,
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          cachePolicy: new cloudfront.CachePolicy(this, 'TransformCachePolicy', {
-            cachePolicyName: `mediaforge-${config.stage}-transform`,
+          cachePolicy: new cloudfront.CachePolicy(this, 'TransformCache', {
+            cachePolicyName: `mediaforge-${config.stage}-transform-v2`,
             headerBehavior: cloudfront.CacheHeaderBehavior.allowList('Accept'),
             queryStringBehavior: cloudfront.CacheQueryStringBehavior.none(),
             defaultTtl: Duration.days(30),
@@ -81,8 +74,8 @@ export class CdnStack extends Stack {
       },
     });
 
-    new CfnOutput(this, 'DistributionDomain', { value: this.distribution.distributionDomainName });
-    new CfnOutput(this, 'DistributionId', { value: this.distribution.distributionId });
+    new CfnOutput(this, 'CdnDomain', { value: this.distribution.distributionDomainName });
+    new CfnOutput(this, 'CdnDistributionId', { value: this.distribution.distributionId });
     new CfnOutput(this, 'TransformFnUrl', { value: fnUrl.url });
   }
 }

@@ -12,9 +12,19 @@
   "dependencies": {
     "@media-forge/core": "file:../packages/core",
     "aws-cdk-lib": "^2.150.0",
-    "constructs": "^10.3.0"
+    "constructs": "^10.3.0",
+    "sharp": "^0.33.0"
   },
   "devDependencies": {
     "typescript": "^5.5.0"
-  }
+  },
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
 }

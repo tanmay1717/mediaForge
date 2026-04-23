@@ -12,7 +12,7 @@ import { OutputFormat } from '@media-forge/core';
  * - Check for "image/avif" support → return 'avif'
  * - Check for "image/webp" support → return 'webp'
  * - Fall back to the original format
- * - Handle edge cases: missing header, malformed header, */* wildcard
+ * - Handle edge cases: missing header, malformed header, * wildcard
  */
 export function negotiateFormat(
   acceptHeader: string | undefined,
