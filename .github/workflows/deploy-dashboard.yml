@@ -1,0 +1,31 @@
+name: Deploy Dashboard
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/dashboard/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::807737159780:role/github-actions-mediaforge
+          aws-region: us-east-1
+
+      - run: npm run build --workspace=packages/dashboard
+      - run: aws s3 sync packages/dashboard/out/ s3://mediaforge-dev-dashboard/ --delete
+      - run: aws cloudfront create-invalidation --distribution-id E10JNZDQX0K5V3 --paths "/*"

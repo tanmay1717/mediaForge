@@ -1,12 +1,9 @@
-name: Deploy Infrastructure
+name: Deploy Transform
 on:
   push:
     branches: [main]
     paths:
-      - 'infrastructure/**'
-      - 'packages/api/**'
-      - 'packages/email-worker/**'
-      - 'packages/core/**'
+      - 'packages/edge-transform/**'
 
 permissions:
   id-token: write
@@ -30,4 +27,4 @@ jobs:
           aws-region: us-east-1
 
       - run: npm run build
-      - run: cd infrastructure && npx cdk deploy --all --require-approval never
+      - run: cd infrastructure && npx cdk deploy MediaForge-Transform-dev --require-approval never
