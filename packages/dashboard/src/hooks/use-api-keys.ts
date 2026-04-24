@@ -4,6 +4,7 @@ import api from '@/lib/api-client';
 export function useApiKeys() {
   return useQuery({ queryKey: ['apiKeys'], queryFn: () => api.get('/v1/api-keys').then(r => r.data) });
 }
+
 export function useCreateApiKey() {
   const qc = useQueryClient();
   return useMutation({
