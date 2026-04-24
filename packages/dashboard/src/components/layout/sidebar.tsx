@@ -25,35 +25,32 @@ export default function Sidebar() {
           {!collapsed && <span className="font-bold text-lg">MediaForge</span>}
         </Link>
       </div>
-
       <nav className="flex-1 p-3 space-y-1">
         {navItems.map(item => {
           const active = pathname.startsWith(item.href);
           return (
             <Link key={item.href} href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                ${active ? 'bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]' : 'text-gray-600 hover:bg-gray-100'}`}>
+                ${active ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}>
               <span>{item.icon}</span>
               {!collapsed && <span>{item.label}</span>}
             </Link>
           );
         })}
       </nav>
-
       <div className="p-3 border-t border-gray-100">
         {!collapsed && (
           <div className="px-3 py-2 mb-2">
-            <p className="text-sm font-medium text-gray-900 truncate">{name}</p>
+            <p className="text-sm font-medium truncate">{name}</p>
             <p className="text-xs text-gray-500 truncate">{email}</p>
           </div>
         )}
         <button onClick={logout}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors">
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 transition-colors">
           <span>🚪</span>
           {!collapsed && <span>Sign out</span>}
         </button>
       </div>
-
       <button onClick={() => setCollapsed(!collapsed)}
         className="p-3 border-t border-gray-100 text-xs text-gray-400 hover:text-gray-600">
         {collapsed ? '→' : '← Collapse'}

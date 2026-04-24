@@ -1,26 +1,39 @@
 import { RequestContext } from '../middleware/request-context';
 import { APIGatewayProxyResult } from 'aws-lambda';
 import { createSuccessResponse } from '../middleware/error-handler';
-import { UsageStats } from '@media-forge/core';
+import { DynamoService } from '../services/dynamo-service';
 
-/**
- * GET /v1/stats — usage statistics for the dashboard home page.
- *
- * TODO:
- * - Query DynamoDB to count total assets by userId
- * - Query DynamoDB to count total folders by userId
- * - Sum fileSize across all assets for total storage
- * - Group assets by assetType for the breakdown chart
- * - Consider caching these stats in a separate DynamoDB item
- *   (updated on upload/delete) to avoid expensive scans
- */
+const assetsDb = new DynamoService(process.env.ASSETS_TABLE!);
+const foldersDb = new DynamoService(process.env.FOLDERS_TABLE!);
+
 export async function handleGetStats(ctx: RequestContext): Promise<APIGatewayProxyResult> {
-  // TODO: Implement actual stats queries
-  const stats: UsageStats = {
-    totalAssets: 0,
-    totalStorage: 0,
-    totalFolders: 0,
-    assetsByType: {},
-  };
-  return createSuccessResponse(stats);
+  // Query assets for this user
+  const assets = await assetsDb.query<{ fileSize: number; assetType: string }>({
+    indexName: 'userId-createdAt-index',
+    keyCondition: 'userId = :uid',
+    expressionValues: { ':uid': ctx.userId },
+    limit: 1000,
+  });
+
+  // Query folders for this user
+  const folders = await foldersDb.query<Record<string, unknown>>({
+    indexName: 'userId-path-index',
+    keyCondition: 'userId = :uid',
+    expressionValues: { ':uid': ctx.userId },
+    limit: 1000,
+  });
+
+  const totalStorage = assets.items.reduce((sum, a) => sum + (a.fileSize || 0), 0);
+  const assetsByType: Record<string, number> = {};
+  assets.items.forEach(a => {
+    const t = a.assetType || 'unknown';
+    assetsByType[t] = (assetsByType[t] || 0) + 1;
+  });
+
+  return createSuccessResponse({
+    totalAssets: assets.items.length,
+    totalStorage,
+    totalFolders: folders.items.length,
+    assetsByType,
+  });
 }

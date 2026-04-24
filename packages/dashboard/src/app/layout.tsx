@@ -6,6 +6,7 @@ import '@/styles/globals.css';
 export const metadata: Metadata = {
   title: 'MediaForge',
   description: 'Self-hosted media asset management and delivery platform',
+  icons: { icon: '/favicon.svg' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

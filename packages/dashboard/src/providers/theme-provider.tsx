@@ -1,29 +1,40 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-/**
- * TODO:
- * - Detect system preference with matchMedia('(prefers-color-scheme: dark)')
- * - Toggle between light/dark by adding/removing 'dark' class on <html>
- * - Persist preference in cookie (not localStorage — SSR compatibility)
- */
-type Theme = 'light' | 'dark' | 'system';
+type Theme = 'light' | 'dark';
 
 interface ThemeState {
   theme: Theme;
   setTheme: (t: Theme) => void;
+  toggle: () => void;
 }
 
-const ThemeContext = createContext<ThemeState>({ theme: 'system', setTheme: () => {} });
+const ThemeContext = createContext<ThemeState>({ theme: 'light', setTheme: () => {}, toggle: () => {} });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('system');
+  const [theme, setThemeState] = useState<Theme>('light');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // TODO: Apply theme class to document.documentElement
-  }, [theme]);
+    setMounted(true);
+    const saved = document.cookie.match(/theme=(light|dark)/)?.[1] as Theme | undefined;
+    if (saved) {
+      setThemeState(saved);
+      document.documentElement.classList.toggle('dark', saved === 'dark');
+    }
+  }, []);
 
-  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
+  const setTheme = (t: Theme) => {
+    setThemeState(t);
+    document.documentElement.classList.toggle('dark', t === 'dark');
+    document.cookie = `theme=${t};path=/;max-age=31536000`;
+  };
+
+  const toggle = () => setTheme(theme === 'light' ? 'dark' : 'light');
+
+  if (!mounted) return <>{children}</>;
+
+  return <ThemeContext.Provider value={{ theme, setTheme, toggle }}>{children}</ThemeContext.Provider>;
 }
 
 export const useTheme = () => useContext(ThemeContext);

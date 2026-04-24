@@ -6,6 +6,7 @@ import api from '@/lib/api-client';
 interface AssetItem {
   assetId: string;
   fileName: string;
+  originalKey: string;
   mimeType: string;
   fileSize: number;
   createdAt: string;
@@ -20,10 +21,19 @@ export default function AssetsPage() {
 
   useEffect(() => {
     api.get('/v1/assets')
-      .then(res => setAssets(res.data?.data?.items || res.data?.items || []))
+      .then(res => {
+        const data = res.data?.data || res.data;
+        setAssets(data?.items || []);
+      })
       .catch(() => setAssets([]))
       .finally(() => setLoading(false));
   }, []);
+
+  // Strip "originals/" prefix from S3 key to get CDN path
+  const getCdnPath = (asset: AssetItem) => {
+    const path = asset.originalKey?.replace(/^originals\//, '') || asset.fileName;
+    return path;
+  };
 
   if (loading) {
     return (
@@ -63,14 +73,15 @@ export default function AssetsPage() {
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {assets.map(asset => (
-            <Link key={asset.assetId} href={`/assets/${asset.assetId}`}
+            <Link key={asset.assetId} href={`/assets/detail?id=${asset.assetId}`}
               className="card overflow-hidden hover:shadow-md transition-shadow group">
               <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
-                {asset.assetType === 'image' ? (
+                {asset.assetType === 'image' || asset.mimeType?.startsWith('image/') ? (
                   <img
-                    src={`https://${cdnDomain}/v1/image/w_200,h_200,c_cover,f_auto/${asset.fileName}`}
+                    src={`https://${cdnDomain}/v1/image/w_200,h_200,c_cover,f_auto/${getCdnPath(asset)}`}
                     alt={asset.fileName}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                 ) : (
                   <span className="text-3xl">📄</span>
@@ -86,9 +97,19 @@ export default function AssetsPage() {
       ) : (
         <div className="card divide-y divide-gray-100">
           {assets.map(asset => (
-            <Link key={asset.assetId} href={`/assets/${asset.assetId}`}
+            <Link key={asset.assetId} href={`/assets/detail?id=${asset.assetId}`}
               className="flex items-center gap-4 p-3 hover:bg-gray-50 transition-colors">
-              <span className="text-xl">{asset.assetType === 'image' ? '🖼️' : '📄'}</span>
+              <div className="w-10 h-10 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                {asset.assetType === 'image' || asset.mimeType?.startsWith('image/') ? (
+                  <img
+                    src={`https://${cdnDomain}/v1/image/w_80,h_80,c_cover,f_auto/${getCdnPath(asset)}`}
+                    alt={asset.fileName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>📄</span>
+                )}
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">{asset.fileName}</p>
                 <p className="text-xs text-gray-400">{asset.mimeType}</p>
