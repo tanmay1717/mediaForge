@@ -48,7 +48,7 @@ export class EmailStack extends Stack {
     const emailWorker = new MediaForgeFunction(this, 'EmailWorker', {
       entry: '../packages/email-worker/src/handler.ts',
       environment: {
-        SES_FROM_EMAIL: config.sesFromEmail,
+        SES_FROM_EMAIL: 'noreply@tanmayshetty.com',
         CDN_DOMAIN: config.cdnDomain,
         DASHBOARD_URL: `https://${config.dashboardDomain}`,
         STAGE: config.stage,

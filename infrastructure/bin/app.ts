@@ -13,9 +13,19 @@ const app = new cdk.App();
 const config = getConfig(app);
 const env = { account: config.account, region: config.region };
 
-const auth = new AuthStack(app, `MediaForge-Auth-${config.stage}`, config, { env });
+// Storage first (tables + bucket)
 const storage = new StorageStack(app, `MediaForge-Storage-${config.stage}`, config, { env });
+
+// Email (SNS topic needed by Auth)
 const email = new EmailStack(app, `MediaForge-Email-${config.stage}`, config, { env });
+
+// Auth (needs tables + SNS topic for post-confirmation trigger)
+const auth = new AuthStack(app, `MediaForge-Auth-${config.stage}`, config, {
+  env,
+  usersTable: storage.usersTable,
+  foldersTable: storage.foldersTable,
+  snsTopic: email.topic,
+});
 
 const api = new ApiStack(app, `MediaForge-Api-${config.stage}`, config, {
   env,
@@ -29,13 +39,12 @@ const api = new ApiStack(app, `MediaForge-Api-${config.stage}`, config, {
   cognitoClientId: auth.userPoolClient.userPoolClientId,
 });
 
-// Keep old Cdn stack (can't delete due to Lambda@Edge replicas)
+// Keep old Cdn stack (Lambda@Edge replicas still cleaning up)
 const cdn = new CdnStack(app, `MediaForge-Cdn-${config.stage}`, config, {
   env,
   bucket: storage.bucket,
 });
 
-// New transform stack
 const transform = new TransformStack(app, `MediaForge-Transform-${config.stage}`, config, {
   env,
   bucket: storage.bucket,
@@ -43,6 +52,9 @@ const transform = new TransformStack(app, `MediaForge-Transform-${config.stage}`
 
 const dashboard = new DashboardHostingStack(app, `MediaForge-Dashboard-${config.stage}`, config, { env });
 
+// Dependencies
+auth.addDependency(storage);
+auth.addDependency(email);
 api.addDependency(auth);
 api.addDependency(storage);
 cdn.addDependency(storage);

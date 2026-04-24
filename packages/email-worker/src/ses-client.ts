@@ -1,7 +1,7 @@
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 
 const ses = new SESClient({});
-const FROM_EMAIL = process.env.SES_FROM_EMAIL || 'noreply@yourdomain.com';
+const FROM_EMAIL = process.env.SES_FROM_EMAIL || 'tshetty510@gmail.com';
 
 /**
  * SES email sending wrapper.
