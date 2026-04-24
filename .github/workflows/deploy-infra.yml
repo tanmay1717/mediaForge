@@ -1,5 +1,6 @@
 name: Deploy Infrastructure
-on:
+
+"on":
   push:
     branches: [main]
     paths:
@@ -21,13 +22,10 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-
       - run: npm ci
-
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::807737159780:role/github-actions-mediaforge
           aws-region: us-east-1
-
       - run: npm run build
       - run: cd infrastructure && npx cdk deploy --all --require-approval never
