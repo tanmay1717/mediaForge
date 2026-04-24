@@ -1,35 +1,53 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { CognitoUser } from 'amazon-cognito-identity-js';
+import { getUserPool } from '@/lib/cognito';
 
-/**
- * TODO: Implement the forgot password page
- echo " * - Email + password form
- * - Call useAuth().login on submit
- * - Show validation errors
- * - Link to /signup and /forgot-password
- * - Redirect to /dashboard on success";;
-  signup) echo " * - Email + password + name form
- * - Password strength indicator
- * - Call useAuth().signup on submit
- * - Redirect to /verify on success";;
-  verify) echo " * - 6-digit code input (auto-focus, auto-advance)
- * - Call useAuth().confirmSignup on submit
- * - Resend code button with cooldown timer
- * - Redirect to /login on success";;
-  forgot-password) echo " * - Email input form
- * - Call API POST /v1/auth/forgot-password
- * - Redirect to /reset-password on success";;
-  reset-password) echo " * - Code + new password + confirm password form
- * - Call API POST /v1/auth/confirm-password
- * - Redirect to /login on success";;
-esac)
- */
-export default function forgotpasswordPage() {
+export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const user = new CognitoUser({ Username: email, Pool: getUserPool() });
+      await new Promise<void>((resolve, reject) => {
+        user.forgotPassword({
+          onSuccess: () => resolve(),
+          onFailure: (err) => reject(err),
+        });
+      });
+      router.push(`/reset-password?email=${encodeURIComponent(email)}`);
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div>
-      <h1 className="text-2xl font-semibold mb-6">forgot password</h1>
-      {/* TODO: Implement form — see comments above */}
-      <p className="text-gray-500">TODO: Implement forgot-password form</p>
+      <h2 className="text-xl font-semibold mb-6">Reset your password</h2>
+      {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+            className="input-field" placeholder="you@example.com" required />
+        </div>
+        <button type="submit" disabled={loading} className="btn-primary w-full">
+          {loading ? 'Sending code...' : 'Send reset code'}
+        </button>
+      </form>
+      <p className="mt-4 text-center text-sm text-gray-500">
+        <Link href="/login" className="text-[rgb(var(--brand))] hover:underline">Back to sign in</Link>
+      </p>
     </div>
   );
 }

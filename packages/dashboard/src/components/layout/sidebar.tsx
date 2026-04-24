@@ -1,43 +1,61 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/providers/auth-provider';
 
-/**
- * TODO: Collapsible sidebar navigation
- * - Logo at top
- * - Nav links: Dashboard, Media Library, Upload, Folders
- * - Settings link at bottom
- * - Collapse toggle (icon-only mode)
- * - Active link highlighting based on current route
- * - Folder tree shortcut (show top 5 folders)
- * - User avatar + name at bottom with logout dropdown
- */
+const navItems = [
+  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
+  { href: '/assets', label: 'Media Library', icon: '🖼️' },
+  { href: '/upload', label: 'Upload', icon: '📤' },
+  { href: '/folders', label: 'Folders', icon: '📁' },
+  { href: '/settings/general', label: 'Settings', icon: '⚙️' },
+];
+
 export default function Sidebar() {
+  const pathname = usePathname();
+  const { name, email, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
 
-  const links = [
-    { href: '/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
-    { href: '/assets', label: 'Media Library', icon: 'Image' },
-    { href: '/upload', label: 'Upload', icon: 'Upload' },
-    { href: '/folders', label: 'Folders', icon: 'FolderOpen' },
-    { href: '/settings', label: 'Settings', icon: 'Settings' },
-  ];
-
   return (
-    <aside className={`${collapsed ? 'w-16' : 'w-64'} bg-white border-r h-full flex flex-col transition-all`}>
-      <div className="p-4 font-bold text-lg">
-        {collapsed ? 'MF' : 'MediaForge'}
+    <aside className={`${collapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 h-full flex flex-col transition-all duration-200`}>
+      <div className="p-4 border-b border-gray-100">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <span className="text-2xl">⚡</span>
+          {!collapsed && <span className="font-bold text-lg">MediaForge</span>}
+        </Link>
       </div>
-      <nav className="flex-1 p-2">
-        {links.map(link => (
-          <Link key={link.href} href={link.href}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-gray-700">
-            {/* TODO: Use lucide-react icons */}
-            <span>{collapsed ? link.icon[0] : link.label}</span>
-          </Link>
-        ))}
+
+      <nav className="flex-1 p-3 space-y-1">
+        {navItems.map(item => {
+          const active = pathname.startsWith(item.href);
+          return (
+            <Link key={item.href} href={item.href}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                ${active ? 'bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]' : 'text-gray-600 hover:bg-gray-100'}`}>
+              <span>{item.icon}</span>
+              {!collapsed && <span>{item.label}</span>}
+            </Link>
+          );
+        })}
       </nav>
-      <button onClick={() => setCollapsed(!collapsed)} className="p-4 text-xs text-gray-400">
+
+      <div className="p-3 border-t border-gray-100">
+        {!collapsed && (
+          <div className="px-3 py-2 mb-2">
+            <p className="text-sm font-medium text-gray-900 truncate">{name}</p>
+            <p className="text-xs text-gray-500 truncate">{email}</p>
+          </div>
+        )}
+        <button onClick={logout}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors">
+          <span>🚪</span>
+          {!collapsed && <span>Sign out</span>}
+        </button>
+      </div>
+
+      <button onClick={() => setCollapsed(!collapsed)}
+        className="p-3 border-t border-gray-100 text-xs text-gray-400 hover:text-gray-600">
         {collapsed ? '→' : '← Collapse'}
       </button>
     </aside>

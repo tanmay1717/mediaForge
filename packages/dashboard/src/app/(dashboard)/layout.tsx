@@ -4,7 +4,6 @@ import Sidebar from '@/components/layout/sidebar';
 import Header from '@/components/layout/header';
 import AuthGuard from '@/components/auth/auth-guard';
 
-/** Protected dashboard layout — sidebar + header + auth guard */
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>

@@ -1,18 +1,25 @@
 'use client';
 import React from 'react';
+import { usePathname } from 'next/navigation';
 
-/**
- * TODO: Top header bar
- * - Search input (Cmd+K to focus, debounced, searches assets globally)
- * - Breadcrumbs component for current path
- * - Notification bell (future)
- * - User avatar dropdown: profile, settings, logout
- */
+const titleMap: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/assets': 'Media Library',
+  '/upload': 'Upload',
+  '/folders': 'Folders',
+  '/settings': 'Settings',
+};
+
 export default function Header() {
+  const pathname = usePathname();
+  const title = Object.entries(titleMap).find(([path]) => pathname.startsWith(path))?.[1] || 'MediaForge';
+
   return (
-    <header className="h-14 border-b bg-white flex items-center justify-between px-6">
-      <div>{/* TODO: Search input */}</div>
-      <div>{/* TODO: User menu */}</div>
+    <header className="h-14 border-b border-gray-200 bg-white flex items-center justify-between px-6">
+      <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
+      <div className="flex items-center gap-3">
+        <span className="text-xs text-gray-400">CDN: {process.env.NEXT_PUBLIC_CDN_DOMAIN}</span>
+      </div>
     </header>
   );
 }

@@ -3,12 +3,6 @@ import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 
-/**
- * TODO: Auth guard — wraps protected routes
- * - If loading: show loading spinner
- * - If not authenticated: redirect to /login
- * - If authenticated: render children
- */
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
@@ -19,7 +13,14 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, isAuthenticated, router]);
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(var(--brand))]" />
+      </div>
+    );
+  }
+
   if (!isAuthenticated) return null;
   return <>{children}</>;
 }

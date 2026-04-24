@@ -1,35 +1,61 @@
 'use client';
-import React from 'react';
+import React, { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/providers/auth-provider';
 
-/**
- * TODO: Implement the verify page
- echo " * - Email + password form
- * - Call useAuth().login on submit
- * - Show validation errors
- * - Link to /signup and /forgot-password
- * - Redirect to /dashboard on success";;
-  signup) echo " * - Email + password + name form
- * - Password strength indicator
- * - Call useAuth().signup on submit
- * - Redirect to /verify on success";;
-  verify) echo " * - 6-digit code input (auto-focus, auto-advance)
- * - Call useAuth().confirmSignup on submit
- * - Resend code button with cooldown timer
- * - Redirect to /login on success";;
-  forgot-password) echo " * - Email input form
- * - Call API POST /v1/auth/forgot-password
- * - Redirect to /reset-password on success";;
-  reset-password) echo " * - Code + new password + confirm password form
- * - Call API POST /v1/auth/confirm-password
- * - Redirect to /login on success";;
-esac)
- */
-export default function verifyPage() {
+function VerifyForm() {
+  const searchParams = useSearchParams();
+  const email = searchParams.get('email') || '';
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { confirmSignup } = useAuth();
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await confirmSignup(email, code);
+      router.push('/login');
+    } catch (err: any) {
+      setError(err.message || 'Verification failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div>
-      <h1 className="text-2xl font-semibold mb-6">verify</h1>
-      {/* TODO: Implement form — see comments above */}
-      <p className="text-gray-500">TODO: Implement verify form</p>
+      <h2 className="text-xl font-semibold mb-2">Verify your email</h2>
+      <p className="text-sm text-gray-500 mb-6">We sent a code to <strong>{email}</strong></p>
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>
+      )}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          type="text"
+          value={code}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          className="input-field text-center text-2xl tracking-[0.5em] font-mono"
+          placeholder="000000"
+          maxLength={6}
+          required
+          autoFocus
+        />
+        <button type="submit" disabled={loading || code.length !== 6} className="btn-primary w-full">
+          {loading ? 'Verifying...' : 'Verify'}
+        </button>
+      </form>
     </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyForm />
+    </Suspense>
   );
 }

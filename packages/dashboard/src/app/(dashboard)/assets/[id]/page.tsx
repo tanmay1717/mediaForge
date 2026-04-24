@@ -1,12 +1,12 @@
-'use client';
-import React, { use } from 'react';
+export function generateStaticParams() { return []; }
 
-export default function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default async function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   return (
     <div>
-      <h1 className="text-2xl font-semibold mb-6">Asset Detail</h1>
+      <h2 className="text-xl font-semibold mb-4">Asset Detail</h2>
       <p className="text-gray-500">Asset ID: {id}</p>
+      {/* TODO: Fetch asset, show preview, metadata, transform builder */}
     </div>
   );
 }

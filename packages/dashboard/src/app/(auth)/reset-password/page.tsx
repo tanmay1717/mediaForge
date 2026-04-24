@@ -1,35 +1,65 @@
 'use client';
-import React from 'react';
+import React, { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { CognitoUser } from 'amazon-cognito-identity-js';
+import { getUserPool } from '@/lib/cognito';
 
-/**
- * TODO: Implement the reset password page
- echo " * - Email + password form
- * - Call useAuth().login on submit
- * - Show validation errors
- * - Link to /signup and /forgot-password
- * - Redirect to /dashboard on success";;
-  signup) echo " * - Email + password + name form
- * - Password strength indicator
- * - Call useAuth().signup on submit
- * - Redirect to /verify on success";;
-  verify) echo " * - 6-digit code input (auto-focus, auto-advance)
- * - Call useAuth().confirmSignup on submit
- * - Resend code button with cooldown timer
- * - Redirect to /login on success";;
-  forgot-password) echo " * - Email input form
- * - Call API POST /v1/auth/forgot-password
- * - Redirect to /reset-password on success";;
-  reset-password) echo " * - Code + new password + confirm password form
- * - Call API POST /v1/auth/confirm-password
- * - Redirect to /login on success";;
-esac)
- */
-export default function resetpasswordPage() {
+function ResetForm() {
+  const searchParams = useSearchParams();
+  const email = searchParams.get('email') || '';
+  const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const user = new CognitoUser({ Username: email, Pool: getUserPool() });
+      await new Promise<void>((resolve, reject) => {
+        user.confirmPassword(code, password, {
+          onSuccess: () => resolve(),
+          onFailure: (err) => reject(err),
+        });
+      });
+      router.push('/login');
+    } catch (err: any) {
+      setError(err.message || 'Reset failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div>
-      <h1 className="text-2xl font-semibold mb-6">reset password</h1>
-      {/* TODO: Implement form — see comments above */}
-      <p className="text-gray-500">TODO: Implement reset-password form</p>
+      <h2 className="text-xl font-semibold mb-6">Set new password</h2>
+      {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Verification code</label>
+          <input type="text" value={code} onChange={(e) => setCode(e.target.value)}
+            className="input-field" placeholder="123456" required />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">New password</label>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+            className="input-field" placeholder="••••••••" required />
+        </div>
+        <button type="submit" disabled={loading} className="btn-primary w-full">
+          {loading ? 'Resetting...' : 'Reset password'}
+        </button>
+      </form>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResetForm />
+    </Suspense>
   );
 }
