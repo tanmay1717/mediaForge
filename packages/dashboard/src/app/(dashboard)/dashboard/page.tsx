@@ -36,7 +36,7 @@ export default function DashboardPage() {
         ].map(stat => (
           <div key={stat.label} className="card p-5">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</span>
+              <span className="text-sm text-gray-500">{stat.label}</span>
               <span className="text-xl">{stat.icon}</span>
             </div>
             <p className="text-2xl font-bold">{stat.value}</p>
@@ -47,14 +47,14 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="card p-6">
           <h3 className="text-lg font-semibold mb-3">Quick Upload</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Drag and drop files or click to upload</p>
+          <p className="text-sm text-gray-500 mb-4">Drag and drop files or click to upload</p>
           <Link href="/upload" className="btn-primary inline-block">Go to Upload</Link>
         </div>
 
         <div className="card p-6">
           <h3 className="text-lg font-semibold mb-3">Your CDN Domain</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Transform images on the fly:</p>
-          <code className="block bg-gray-50 dark:bg-gray-900 p-3 rounded-lg text-xs break-all">
+          <p className="text-sm text-gray-500 mb-2">Transform images on the fly:</p>
+          <code className="block bg-gray-100 p-3 rounded-lg text-xs break-all">
             https://{cdnDomain}/v1/image/w_500,f_auto,q_auto/products/hero.jpg
           </code>
         </div>
