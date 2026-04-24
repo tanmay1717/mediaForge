@@ -63,7 +63,26 @@ export class ApiStack extends Stack {
       },
     });
 
-    // Public routes: /v1/auth/* — NO Cognito authorizer
+    // CORS headers on ALL error responses (4xx, 5xx)
+    // Without this, Cognito authorizer 401s block the browser
+    this.api.addGatewayResponse('cors-4xx', {
+      type: apigateway.ResponseType.DEFAULT_4XX,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization,x-api-key'",
+        'Access-Control-Allow-Methods': "'GET,POST,PUT,DELETE,OPTIONS'",
+      },
+    });
+    this.api.addGatewayResponse('cors-5xx', {
+      type: apigateway.ResponseType.DEFAULT_5XX,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization,x-api-key'",
+        'Access-Control-Allow-Methods': "'GET,POST,PUT,DELETE,OPTIONS'",
+      },
+    });
+
+    // Public routes: /v1/auth/*
     const v1 = this.api.root.addResource('v1');
     const auth = v1.addResource('auth');
     const authProxy = auth.addResource('{proxy+}');
@@ -71,8 +90,7 @@ export class ApiStack extends Stack {
       authorizationType: apigateway.AuthorizationType.NONE,
     });
 
-    // Protected routes: everything else — WITH Cognito authorizer
-    // /v1/upload, /v1/assets, /v1/folders, /v1/cache, /v1/api-keys, /v1/stats
+    // Protected routes
     const protectedResources = ['upload', 'assets', 'folders', 'cache', 'api-keys', 'stats'];
     for (const resource of protectedResources) {
       const res = v1.addResource(resource);
@@ -80,7 +98,6 @@ export class ApiStack extends Stack {
         authorizer,
         authorizationType: apigateway.AuthorizationType.COGNITO,
       });
-      // Add {proxy+} for sub-paths like /v1/assets/{id}
       const subProxy = res.addResource('{proxy+}');
       subProxy.addMethod('ANY', lambdaIntegration, {
         authorizer,
