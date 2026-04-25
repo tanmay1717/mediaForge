@@ -29,7 +29,7 @@ export default function LoginPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-6">Sign in to your account</h2>
+      <h2 className="text-xl font-semibold mb-6 dark:text-zinc-100">Sign in to your account</h2>
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
           {error}
@@ -37,7 +37,7 @@ export default function LoginPage() {
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email</label>
           <input
             type="email"
             value={email}
@@ -48,7 +48,7 @@ export default function LoginPage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Password</label>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
@@ -61,22 +61,22 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm hover:text-zinc-600 transition-colors"
             >
               {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
         </div>
-        <button type="submit" disabled={loading} className="btn-primary w-full">
+        <button type="submit" disabled={loading} className="btn-primary w-full justify-center">
           {loading ? 'Signing in...' : 'Sign in'}
         </button>
       </form>
-      <div className="mt-4 text-center text-sm text-gray-500">
-        <Link href="/forgot-password" className="text-[rgb(var(--brand))] hover:underline">
+      <div className="mt-4 text-center text-sm text-zinc-500">
+        <Link href="/forgot-password" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
           Forgot password?
         </Link>
         <span className="mx-2">·</span>
-        <Link href="/signup" className="text-[rgb(var(--brand))] hover:underline">
+        <Link href="/signup" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
           Create account
         </Link>
       </div>

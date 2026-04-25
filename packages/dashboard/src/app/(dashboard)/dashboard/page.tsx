@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/providers/auth-provider';
 import Link from 'next/link';
 import api from '@/lib/api-client';
+import { Images, HardDrive, Folder, Zap, Upload, Settings } from 'lucide-react';
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -23,40 +24,56 @@ export default function DashboardPage() {
       .catch(() => {});
   }, []);
 
-  return (
-    <div className="max-w-6xl mx-auto">
-      <h2 className="text-2xl font-semibold mb-6">Welcome back, {name} 👋</h2>
+  const statCards = [
+    { label: 'Total Assets', value: stats.totalAssets.toString(), icon: Images },
+    { label: 'Storage Used', value: formatBytes(stats.totalStorage), icon: HardDrive },
+    { label: 'Folders', value: stats.totalFolders.toString(), icon: Folder },
+    { label: 'CDN Domain', value: cdnDomain.split('.')[0], icon: Zap },
+  ];
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: 'Total Assets', value: stats.totalAssets.toString(), icon: '🖼️' },
-          { label: 'Storage Used', value: formatBytes(stats.totalStorage), icon: '💾' },
-          { label: 'Folders', value: stats.totalFolders.toString(), icon: '📁' },
-          { label: 'CDN Domain', value: cdnDomain.split('.')[0], icon: '⚡' },
-        ].map(stat => (
-          <div key={stat.label} className="card p-5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-500">{stat.label}</span>
-              <span className="text-xl">{stat.icon}</span>
+  const quickLinks = [
+    { href: '/upload', label: 'Upload files', desc: 'Add new media to your library', icon: Upload },
+    { href: '/assets', label: 'Browse library', desc: 'View and search all your assets', icon: Images },
+    { href: '/folders', label: 'Manage folders', desc: 'Organise assets into folders', icon: Folder },
+    { href: '/settings/general', label: 'Settings', desc: 'Account and domain config', icon: Settings },
+  ];
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-6">
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        Welcome back, <span className="font-medium text-zinc-900 dark:text-zinc-100">{name}</span>
+      </p>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {statCards.map(({ label, value, icon: Icon }) => (
+          <div key={label} className="card p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">{label}</span>
+              <div className="size-7 rounded-lg bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center">
+                <Icon className="size-3.5 text-zinc-400 dark:text-zinc-500" />
+              </div>
             </div>
-            <p className="text-2xl font-bold">{stat.value}</p>
+            <p className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{value}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="card p-6">
-          <h3 className="text-lg font-semibold mb-3">Quick Upload</h3>
-          <p className="text-sm text-gray-500 mb-4">Drag and drop files or click to upload</p>
-          <Link href="/upload" className="btn-primary inline-block">Go to Upload</Link>
-        </div>
-
-        <div className="card p-6">
-          <h3 className="text-lg font-semibold mb-3">Your CDN Domain</h3>
-          <p className="text-sm text-gray-500 mb-2">Transform images on the fly:</p>
-          <code className="block bg-gray-100 p-3 rounded-lg text-xs break-all">
-            https://{cdnDomain}/v1/image/w_500,f_auto,q_auto/products/hero.jpg
-          </code>
+      <div>
+        <h3 className="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-3">Quick actions</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          {quickLinks.map(({ href, label, desc, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className="card p-4 hover:shadow-md transition-shadow group"
+            >
+              <div className="size-8 rounded-lg bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center mb-3">
+                <Icon className="size-4 text-zinc-400 dark:text-zinc-500" />
+              </div>
+              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{label}</p>
+              <p className="text-xs text-zinc-400 mt-0.5">{desc}</p>
+            </Link>
+          ))}
         </div>
       </div>
     </div>
