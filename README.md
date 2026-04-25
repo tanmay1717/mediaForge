@@ -78,6 +78,168 @@ The transformation happens at the edge the first time it's requested, gets cache
 │   └─────────────────────────────────────────────────────┘                   │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+----
+```mermaid
+flowchart TB
+    Browser["Browser / Mobile App"]
+    Dashboard["Next.js Dashboard\nmediaforge.tanmayshetty.com"]
+
+    subgraph Auth["Authentication"]
+        Cognito["AWS Cognito\nUser Pool + JWT"]
+        PostConfirm["Lambda\nPost-Confirmation Trigger"]
+    end
+
+    subgraph APILayer["API Layer"]
+        APIGW["API Gateway\nREST API + Cognito Authorizer"]
+        APILambda["Lambda\nNode.js — API Logic"]
+    end
+
+    subgraph CDNLayer["CDN + Edge"]
+        ACM["ACM\nSSL Certificate"]
+        CF_CDN["CloudFront\ncdn.tanmayshetty.com"]
+        TransformLambda["Lambda@Edge + Sharp\nImage Transform"]
+    end
+
+    subgraph StorageLayer["Storage"]
+        S3[("S3\nOriginals + Transform Cache")]
+        DynamoDB[("DynamoDB\nAssets / Folders / Users / Keys")]
+    end
+
+    subgraph EmailPipeline["Email Pipeline"]
+        SNS["SNS\nUser Events Topic"]
+        SQS["SQS\nEmail Queue + DLQ"]
+        EmailLambda["Lambda\nEmail Worker"]
+        SES["SES\nTransactional Email"]
+    end
+
+    subgraph CICD["CI/CD"]
+        GitHub["GitHub Actions\nOIDC → CDK Deploy"]
+    end
+
+    %% User → services
+    Browser -->|"Delivery URL request"| CF_CDN
+    Dashboard -->|"Signup / Login (Cognito SDK)"| Cognito
+    Dashboard -->|"API calls + JWT"| APIGW
+
+    %% Auth flow
+    Cognito -->|"JWT token"| Dashboard
+    APIGW -->|"Validate JWT"| Cognito
+    APIGW --> APILambda
+
+    %% API logic
+    APILambda --> S3
+    APILambda --> DynamoDB
+    APILambda -->|"Publish event"| SNS
+
+    %% CDN delivery path
+    ACM -.->|"SSL cert"| CF_CDN
+    CF_CDN -->|"Cache hit (~5ms) → serve"| Browser
+    CF_CDN -->|"Cache miss → origin request"| TransformLambda
+    TransformLambda -->|"Fetch original"| S3
+    TransformLambda -->|"Save variant"| S3
+    TransformLambda -->|"Transformed response"| CF_CDN
+
+    %% Post-confirmation trigger
+    Cognito -->|"Post-confirmation trigger"| PostConfirm
+    PostConfirm -->|"USER_CREATED event"| SNS
+
+    %% Email pipeline
+    SNS --> SQS
+    SQS --> EmailLambda
+    EmailLambda --> SES
+
+    %% CI/CD — deploys all infra stacks + dashboard hosting
+    GitHub -->|"CDK deploy (all stacks)"| CF_CDN
+    GitHub -->|"CDK deploy (all stacks)"| APIGW
+    GitHub -->|"Dashboard S3 sync + CF invalidation"| S3
+
+    style CF_CDN fill:#0ea5e9,color:#fff
+    style TransformLambda fill:#0ea5e9,color:#fff
+    style ACM fill:#0ea5e9,color:#fff
+    style S3 fill:#f59e0b,color:#fff
+    style DynamoDB fill:#f59e0b,color:#fff
+    style Cognito fill:#8b5cf6,color:#fff
+    style PostConfirm fill:#8b5cf6,color:#fff
+    style APIGW fill:#8b5cf6,color:#fff
+    style APILambda fill:#8b5cf6,color:#fff
+    style SNS fill:#ec4899,color:#fff
+    style SQS fill:#ec4899,color:#fff
+    style EmailLambda fill:#ec4899,color:#fff
+    style SES fill:#ec4899,color:#fff
+    style GitHub fill:#6b7280,color:#fff
+```
+---
+
+## AWS Resource Map
+
+```mermaid
+flowchart LR
+
+    subgraph SEC["Security & Auth"]
+        Cognito(["Cognito\nUser Pool"])
+        ACM(["ACM\nSSL Cert"])
+    end
+
+    subgraph API["API Layer"]
+        APIGW["API Gateway"]
+        APIλ["Lambda\nAPI"]
+        PCλ["Lambda\nPost-Confirm"]
+    end
+
+    subgraph CDN["CDN & Edge"]
+        CF["CloudFront"]
+        Eλ["Lambda@Edge\n+ Sharp"]
+    end
+
+    subgraph STORE["Storage"]
+        S3[("S3")]
+        DDB[("DynamoDB")]
+    end
+
+    subgraph MSG["Async Messaging"]
+        SNS{{"SNS"}}
+        SQS[["SQS + DLQ"]]
+        Eml["Lambda\nEmail Worker"]
+        SES(["SES"])
+    end
+
+    Cognito -->|validates JWT| APIGW
+    Cognito -->|post-confirm trigger| PCλ
+    ACM -.->|TLS| CF
+
+    APIGW --> APIλ
+    APIλ --> S3
+    APIλ --> DDB
+    APIλ --> SNS
+
+    PCλ --> SNS
+    PCλ --> DDB
+
+    CF -->|cache miss| Eλ
+    Eλ -->|fetch original| S3
+    Eλ -->|write variant| S3
+    Eλ -->|serve response| CF
+
+    SNS --> SQS
+    SQS --> Eml
+    Eml --> SES
+
+    style Cognito  fill:#BF0816,color:#fff
+    style ACM      fill:#BF0816,color:#fff
+    style PCλ      fill:#FF9900,color:#fff
+    style APIGW    fill:#8C4FFF,color:#fff
+    style APIλ     fill:#FF9900,color:#fff
+    style CF       fill:#8C4FFF,color:#fff
+    style Eλ       fill:#FF9900,color:#fff
+    style S3       fill:#3F9142,color:#fff
+    style DDB      fill:#4053D6,color:#fff
+    style SNS      fill:#E7157B,color:#fff
+    style SQS      fill:#E7157B,color:#fff
+    style Eml      fill:#FF9900,color:#fff
+    style SES      fill:#E7157B,color:#fff
+```
+
+**Color key:** `orange` Lambda &nbsp;·&nbsp; `purple` CloudFront / API Gateway &nbsp;·&nbsp; `red` Cognito / ACM &nbsp;·&nbsp; `green` S3 &nbsp;·&nbsp; `blue` DynamoDB &nbsp;·&nbsp; `pink` SNS / SQS / SES
 
 ---
 
