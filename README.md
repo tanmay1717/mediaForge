@@ -13,7 +13,7 @@ Every modern application needs to serve media files — product images, profile 
 MediaForge runs entirely on your AWS account. You upload a file once, and it becomes available at a delivery URL on your custom domain. By modifying URL parameters, any client can request any variant on the fly — no pre-processing, no batch jobs.
 
 ```
-https://cdn.yourdomain.com/v1/image/w_800,f_auto,q_auto/products/hero.jpg
+https://cdn.tanmayshetty.com/v1/image/w_800,f_auto,q_auto/products/hero.jpg
 ```
 
 The transformation happens at the edge the first time it's requested, gets cached globally across 400+ CloudFront locations, and every subsequent request is served in ~5ms.
@@ -30,7 +30,7 @@ The transformation happens at the edge the first time it's requested, gets cache
 │                                                                             │
 │   ┌──────────────┐                          ┌────────────────┐              │
 │   │   Next.js    │                          │ Browser Request│              │
-│   │  Dashboard   │                          │cdn.yourdomain.com             │
+│   │  Dashboard   │                          │cdn.tanmayshetty.com             │
 │   └──────┬───────┘                          └───────┬────────┘              │
 │          │                                          │                       │
 │          ▼                                          ▼                       │
@@ -172,74 +172,7 @@ flowchart TB
 
 ## AWS Resource Map
 
-```mermaid
-flowchart LR
-
-    subgraph SEC["Security & Auth"]
-        Cognito(["Cognito\nUser Pool"])
-        ACM(["ACM\nSSL Cert"])
-    end
-
-    subgraph API["API Layer"]
-        APIGW["API Gateway"]
-        APIλ["Lambda\nAPI"]
-        PCλ["Lambda\nPost-Confirm"]
-    end
-
-    subgraph CDN["CDN & Edge"]
-        CF["CloudFront"]
-        Eλ["Lambda@Edge\n+ Sharp"]
-    end
-
-    subgraph STORE["Storage"]
-        S3[("S3")]
-        DDB[("DynamoDB")]
-    end
-
-    subgraph MSG["Async Messaging"]
-        SNS{{"SNS"}}
-        SQS[["SQS + DLQ"]]
-        Eml["Lambda\nEmail Worker"]
-        SES(["SES"])
-    end
-
-    Cognito -->|validates JWT| APIGW
-    Cognito -->|post-confirm trigger| PCλ
-    ACM -.->|TLS| CF
-
-    APIGW --> APIλ
-    APIλ --> S3
-    APIλ --> DDB
-    APIλ --> SNS
-
-    PCλ --> SNS
-    PCλ --> DDB
-
-    CF -->|cache miss| Eλ
-    Eλ -->|fetch original| S3
-    Eλ -->|write variant| S3
-    Eλ -->|serve response| CF
-
-    SNS --> SQS
-    SQS --> Eml
-    Eml --> SES
-
-    style Cognito  fill:#BF0816,color:#fff
-    style ACM      fill:#BF0816,color:#fff
-    style PCλ      fill:#FF9900,color:#fff
-    style APIGW    fill:#8C4FFF,color:#fff
-    style APIλ     fill:#FF9900,color:#fff
-    style CF       fill:#8C4FFF,color:#fff
-    style Eλ       fill:#FF9900,color:#fff
-    style S3       fill:#3F9142,color:#fff
-    style DDB      fill:#4053D6,color:#fff
-    style SNS      fill:#E7157B,color:#fff
-    style SQS      fill:#E7157B,color:#fff
-    style Eml      fill:#FF9900,color:#fff
-    style SES      fill:#E7157B,color:#fff
-```
-
-**Color key:** `orange` Lambda &nbsp;·&nbsp; `purple` CloudFront / API Gateway &nbsp;·&nbsp; `red` Cognito / ACM &nbsp;·&nbsp; `green` S3 &nbsp;·&nbsp; `blue` DynamoDB &nbsp;·&nbsp; `pink` SNS / SQS / SES
+![AWS Resource Map](images/aws_media_forge.png)
 
 ---
 
@@ -253,7 +186,7 @@ flowchart LR
 | **Lambda** | Backend API logic — upload, CRUD, folders, events | Serverless compute, scales to zero, no servers to manage |
 | **API Gateway** | REST API with auth, throttling, routing | Managed REST endpoints with native Cognito authorizer |
 | **DynamoDB** | Asset metadata, folder tree, users, API keys | Single-digit ms reads, schema-flexible for varied metadata |
-| **ACM** | SSL certificates for `cdn.yourdomain.com` | Free auto-renewing certs required by CloudFront for HTTPS |
+| **ACM** | SSL certificates for `cdn.tanmayshetty.com` | Free auto-renewing certs required by CloudFront for HTTPS |
 | **Cognito** | User auth — signup, login, JWT issuance | Managed auth lifecycle, issues JWTs that API Gateway validates natively |
 | **SNS** | Publishes user lifecycle events (fan-out) | Decouples API from downstream consumers |
 | **SQS** | Queues email jobs with retry + dead-letter | Absorbs spikes, automatic retry, signup never blocked by email failure |
@@ -305,14 +238,14 @@ flowchart LR
         fileSize, width, height, metadata, tags, status, timestamps
    g. Updates the folder's assetCount and totalSize in DynamoDB
 6. Lambda returns the asset record including the delivery URL:
-   https://cdn.yourdomain.com/v1/image/{folderId}/{fileName}
+   https://cdn.tanmayshetty.com/v1/image/{folderId}/{fileName}
 7. Dashboard displays the uploaded asset with a copy-ready delivery URL
 ```
 
 ### Flow 3 — Image Delivery + Transformation (the core flow)
 
 ```
-Request URL: https://cdn.yourdomain.com/v1/image/w_500,h_300,f_auto,q_80/products/hero.jpg
+Request URL: https://cdn.tanmayshetty.com/v1/image/w_500,h_300,f_auto,q_80/products/hero.jpg
 
 STEP 1 — CloudFront Edge (cache check)
    Browser request hits the nearest CloudFront edge location.
@@ -465,7 +398,7 @@ Developer pushes to main branch
 
 ## URL Transformation Reference
 
-**Pattern:** `https://cdn.yourdomain.com/v1/{type}/{transforms}/{path}`
+**Pattern:** `https://cdn.tanmayshetty.com/v1/{type}/{transforms}/{path}`
 
 | Parameter | Description | Example |
 |-----------|-------------|---------|
@@ -486,22 +419,22 @@ Developer pushes to main branch
 
 ```bash
 # Auto-format, auto-quality, resize
-cdn.yourdomain.com/v1/image/w_800,f_auto,q_auto/products/hero.jpg
+cdn.tanmayshetty.com/v1/image/w_800,f_auto,q_auto/products/hero.jpg
 
 # Square thumbnail with face detection
-cdn.yourdomain.com/v1/image/w_150,h_150,c_thumb,g_face/avatars/user.jpg
+cdn.tanmayshetty.com/v1/image/w_150,h_150,c_thumb,g_face/avatars/user.jpg
 
 # Retina-ready with blur effect
-cdn.yourdomain.com/v1/image/w_400,dpr_2,e_blur:5,f_auto/banners/bg.jpg
+cdn.tanmayshetty.com/v1/image/w_400,dpr_2,e_blur:5,f_auto/banners/bg.jpg
 
 # Video poster frame
-cdn.yourdomain.com/v1/video/w_640,f_jpg/demos/intro.mp4
+cdn.tanmayshetty.com/v1/video/w_640,f_jpg/demos/intro.mp4
 
 # PDF page as image
-cdn.yourdomain.com/v1/document/w_800,f_png,pg_1/reports/q3.pdf
+cdn.tanmayshetty.com/v1/document/w_800,f_png,pg_1/reports/q3.pdf
 
 # Raw file passthrough (no transforms)
-cdn.yourdomain.com/v1/raw/documents/contract.pdf
+cdn.tanmayshetty.com/v1/raw/documents/contract.pdf
 ```
 
 ---
