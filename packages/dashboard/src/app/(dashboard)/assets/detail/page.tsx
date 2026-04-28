@@ -143,10 +143,10 @@ function AssetDetail() {
           <div className="card p-4">
             <p className="text-xs font-medium text-zinc-400 mb-3">CDN URLs</p>
             <div className="space-y-1.5">
-              {[
-                { label: 'Transform', url: transformUrl },
-                { label: 'Original', url: originalUrl },
-              ].map(({ label, url }) => (
+              {(isImage
+                ? [{ label: 'Transform', url: transformUrl }, { label: 'Original', url: originalUrl }]
+                : [{ label: 'Original', url: originalUrl }]
+              ).map(({ label, url }) => (
                 <button key={label} onClick={() => copyUrl(url)}
                   className="w-full text-left flex items-center gap-2.5 p-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group">
                   <span className="text-xs font-medium text-zinc-400 w-14 shrink-0">{label}</span>

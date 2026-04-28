@@ -1,5 +1,5 @@
 import { CloudFrontRequestEvent, CloudFrontResultResponse, Context } from 'aws-lambda';
-import { parseTransforms, sanitizePath, AssetType } from '@media-forge/core';
+import { parseTransforms, sanitizePath } from '@media-forge/core';
 import { validateTransformParams } from '@media-forge/core';
 import { TRANSFORM_DEFAULTS } from '@media-forge/core';
 import { ResolvedTransformParams } from '@media-forge/core';
@@ -98,13 +98,19 @@ export async function handler(
     // Step 7: Cache miss → transform
     // TODO: Build the correct original S3 key from the asset path
     const originalKey = `originals/${safePath}`;
+
+    // Reject non-image file types early — Sharp cannot process PDFs/videos
+    const NON_IMAGE_EXTS = ['pdf', 'mp4', 'webm', 'mov', 'avi', 'mkv'];
+    if (NON_IMAGE_EXTS.includes(ext.toLowerCase())) {
+      return buildErrorResponse('400', `Transform not supported for .${ext} files. Use /v1/raw/ instead.`);
+    }
+
     const originalBuffer = await getObject(originalKey);
 
     let outputBuffer: Buffer;
     if (assetType === 'image') {
       outputBuffer = await transformImage(originalBuffer, resolved);
     } else {
-      // TODO: Route to video/pdf/passthrough transformers
       outputBuffer = await passthrough(originalBuffer);
     }
 

@@ -2,7 +2,7 @@ import { RequestContext } from '../middleware/request-context';
 import { AssetService } from '../services/asset-service';
 import { createSuccessResponse } from '../middleware/error-handler';
 import { APIGatewayProxyResult } from 'aws-lambda';
-import { validateUpload } from '@media-forge/core';
+import { validateUpload, resolveAssetType, AssetType } from '@media-forge/core';
 
 const assets = new AssetService();
 const CDN_DOMAIN = process.env.CDN_DOMAIN || 'cdn.tanmayshetty.com';
@@ -23,12 +23,15 @@ export async function handleUpload(ctx: RequestContext): Promise<APIGatewayProxy
 
   // Build CDN URLs — strip "originals/" prefix from the S3 key
   const cdnPath = asset.originalKey.replace(/^originals\//, '');
-  const deliveryUrls = {
+  const assetType = resolveAssetType(mimeType);
+  const deliveryUrls: Record<string, string> = {
     original: `https://${CDN_DOMAIN}/v1/raw/${cdnPath}`,
-    optimized: `https://${CDN_DOMAIN}/v1/image/f_auto,q_auto/${cdnPath}`,
-    thumbnail: `https://${CDN_DOMAIN}/v1/image/w_200,h_200,c_cover,f_auto/${cdnPath}`,
-    example: `https://${CDN_DOMAIN}/v1/image/w_800,f_auto,q_auto/${cdnPath}`,
   };
+  if (assetType === AssetType.IMAGE || assetType === AssetType.SVG) {
+    deliveryUrls.optimized = `https://${CDN_DOMAIN}/v1/image/f_auto,q_auto/${cdnPath}`;
+    deliveryUrls.thumbnail = `https://${CDN_DOMAIN}/v1/image/w_200,h_200,c_cover,f_auto/${cdnPath}`;
+    deliveryUrls.large = `https://${CDN_DOMAIN}/v1/image/w_800,f_auto,q_auto/${cdnPath}`;
+  }
 
   return createSuccessResponse({ asset, deliveryUrls }, 201);
 }

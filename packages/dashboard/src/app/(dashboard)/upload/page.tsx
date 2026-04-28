@@ -27,9 +27,10 @@ export default function UploadPage() {
   const uploadFile = async (item: UploadItem, index: number) => {
     setItems(prev => prev.map((it, i) => i === index ? { ...it, status: 'uploading' } : it));
     try {
-      const base64 = await new Promise<string>((resolve) => {
+      const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = () => reject(new Error('Failed to read file'));
         reader.readAsDataURL(item.file);
       });
 
