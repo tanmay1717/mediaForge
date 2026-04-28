@@ -30,23 +30,35 @@ export async function handler(event: {
   const acceptHeader = event.headers?.['accept'] || event.headers?.['Accept'] || '';
 
   try {
-    // Parse: /v1/{type}/{transforms}/{path...}
+    // Handle raw requests FIRST — before the transform regex, because
+    // /v1/raw/{userId}/... would otherwise be misparse as assetType=raw,
+    // transformSegment={userId}, assetPath=ROOT/... → wrong S3 key.
+    const rawMatch = uri.match(/^\/v1\/raw\/(.+)$/);
+    if (rawMatch) {
+      const rawPath = rawMatch[1];
+      const buffer = await getObject(`originals/${rawPath}`);
+      const ext = rawPath.split('.').pop()?.toLowerCase() ?? '';
+      const MIME: Record<string, string> = {
+        pdf: 'application/pdf', mp4: 'video/mp4', webm: 'video/webm',
+        mov: 'video/quicktime', svg: 'image/svg+xml',
+        jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+        webp: 'image/webp', avif: 'image/avif', gif: 'image/gif',
+      };
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': MIME[ext] || 'application/octet-stream',
+          'Cache-Control': 'public, max-age=2592000, immutable',
+          'Content-Disposition': `inline; filename="${rawPath.split('/').pop()}"`,
+        },
+        body: buffer.toString('base64'),
+        isBase64Encoded: true,
+      };
+    }
+
+    // Parse transform requests: /v1/{type}/{transforms}/{path...}
     const match = uri.match(/^\/v1\/(\w+)\/([^/]+)\/(.+)$/);
     if (!match) {
-      // Try raw passthrough: /v1/raw/{path}
-      const rawMatch = uri.match(/^\/v1\/raw\/(.+)$/);
-      if (rawMatch) {
-        const buffer = await getObject(`originals/${rawMatch[1]}`);
-        return {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/octet-stream',
-            'Cache-Control': 'public, max-age=2592000, immutable',
-          },
-          body: buffer.toString('base64'),
-          isBase64Encoded: true,
-        };
-      }
       return { statusCode: 400, headers: {}, body: JSON.stringify({ error: 'Invalid URL format' }), isBase64Encoded: false };
     }
 

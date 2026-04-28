@@ -16,9 +16,9 @@ import { App } from 'aws-cdk-lib';
 export function getConfig(app: App): MediaForgeConfig {
   return {
     stage: app.node.tryGetContext('stage') || 'dev',
-    cdnDomain: app.node.tryGetContext('cdnDomain') || 'cdn.yourdomain.com',
-    dashboardDomain: app.node.tryGetContext('dashboardDomain') || 'app.yourdomain.com',
-    sesFromEmail: app.node.tryGetContext('sesFromEmail') || 'noreply@yourdomain.com',
+    cdnDomain: app.node.tryGetContext('cdnDomain') || 'cdn.tanmayshetty.com',
+    dashboardDomain: app.node.tryGetContext('dashboardDomain') || 'app.tanmayshetty.com',
+    sesFromEmail: app.node.tryGetContext('sesFromEmail') || 'noreply@tanmayshetty.com',
     region: process.env.CDK_DEFAULT_REGION || 'us-east-1',
     account: process.env.CDK_DEFAULT_ACCOUNT || '',
   };
